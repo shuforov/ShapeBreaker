@@ -1,22 +1,83 @@
 #include "../include/Game.h"
 
+#include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
 #include <iostream>
 #include <memory>
+#include <fstream>
 
 Game::Game(const std::string & config) {
   init(config);
 }
 
 void Game::init(const std::string & path) {
-  // TODO: read in config file here
-  //       use the premade PlayerConfig, EnemyConfig, BulletConfig variables
+  // Reading data in config file here
+  //       using the premade PlayerConfig, EnemyConfig, BulletConfig variables to store config data
+
+  std::ifstream fileInput(path);
+  if (!fileInput.is_open()) {
+    std::cerr << "Could not open config file: " << path << std::endl;
+    exit(1);
+  }
+  std::string configName;
+  int windowWidth;
+  int windowHeight;
+  int frameLimit;
+  int screenMode;
+
+  while (fileInput >> configName) {
+    if (configName == "Window") {
+      fileInput >> windowWidth
+		>> windowHeight
+		>> frameLimit
+		>> screenMode;
+    } else if (configName == "Player") {
+      fileInput >> m_playerConfig.SR
+		>> m_playerConfig.CR
+		>> m_playerConfig.S
+		>> m_playerConfig.FR
+		>> m_playerConfig.FG
+		>> m_playerConfig.FB
+		>> m_playerConfig.OR
+		>> m_playerConfig.OG
+		>> m_playerConfig.OB
+		>> m_playerConfig.OT
+		>> m_playerConfig.V;
+
+    } else if (configName == "Enemy") {
+      fileInput >> m_enemyConfig.SR
+		>> m_enemyConfig.CR
+		>> m_enemyConfig.SMIN
+		>> m_enemyConfig.SMAX
+		>> m_enemyConfig.OR
+		>> m_enemyConfig.OG
+		>> m_enemyConfig.OB
+		>> m_enemyConfig.OT
+		>> m_enemyConfig.VMIN
+		>> m_enemyConfig.VMAX
+		>> m_enemyConfig.L
+		>> m_enemyConfig.SI;
+    } else if (configName == "Bullet") {
+      fileInput >> m_bulletConfig.SR
+		>> m_bulletConfig.CR
+		>> m_bulletConfig.S
+		>> m_bulletConfig.FR
+		>> m_bulletConfig.FG
+		>> m_bulletConfig.FB
+		>> m_bulletConfig.OR
+		>> m_bulletConfig.OG
+		>> m_bulletConfig.OB
+		>> m_bulletConfig.OT
+		>> m_bulletConfig.V
+		>> m_bulletConfig.L;
+    }
+  }
 
   // set up default window parameters
-  m_window.create(sf::VideoMode(1280,720), "Assignment 2");
-  m_window.setFramerateLimit(60);
+  m_window.create(sf::VideoMode(windowWidth, windowHeight), "Assignment 2");
+  m_window.setFramerateLimit(frameLimit);
 
   spawnPlayer();
 }
@@ -46,17 +107,33 @@ void Game::setPaused(bool paused) {
 
 // respawn the player in the middle of the screen
 void Game::spawnPlayer() {
-  // TODO: Finish adding all properties of the player with the correct values from the config
-
   // We create every entity by calling EntityManager.addEntity(tag)
   // This returns a std::shared_ptr<Entity>, so we use 'auto' to save typing
   auto entity = m_entities.addEntity("player");
 
-  // Give this entity a Transform so it spawns at (200,200) with velocity (1,1) and angle 0
-  entity->cTransform = std::make_shared<CTransform>(Vec2(200.0f, 200.0f), Vec2(1.0f, 1.0f), 0.0f);
+  // Give this entity a Transform so it spawns at center of window with velocity (0, 0) and angle 0
+  Vec2 playerPosition;
+  sf::Vector2u windowSize = m_window.getSize();
+  playerPosition = Vec2(windowSize.x, windowSize.y) / 2;
+  entity->cTransform = std::make_shared<CTransform>(playerPosition, Vec2(0.0f, 0.0f), 0.0f);
 
-  // The entity's shape will have radius 32, 8 sides, dark grey fill, and red outline of thickness 4
-  entity->cShape = std::make_shared<CShape>(32.0f, 8, sf::Color(10, 10, 10), sf::Color(255, 0, 0), 4.0f);
+  // The entity's shape will have radius X, X sides, COLOR-X fill, and COLOR-X outline of thickness X (X is number from config structure PlayerConfig)
+  entity->cShape =
+    std::make_shared<CShape>(
+			     m_playerConfig.SR,
+			     m_playerConfig.V,
+			     sf::Color(
+				       m_playerConfig.FR,
+				       m_playerConfig.FG,
+				       m_playerConfig.FB
+				       ),
+			     sf::Color(
+				       m_playerConfig.OR,
+				       m_playerConfig.OG,
+				       m_playerConfig.OB
+				       ),
+			     m_playerConfig.OT
+			     );
 
   // Add an input component to the player so that we can use inputs
   entity->cInput = std::make_shared<CInput>();

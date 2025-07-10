@@ -4,9 +4,14 @@
 EntityManager::EntityManager() {}
 
 void EntityManager::update() {
-  // TODO: add entities from m_entitiesToAdd the proper location(s)
-  //       - add them to the vector of all entities
-  //       - add them to the vector inside the map, with the tag as a key
+  // Adding entities from m_entitiesToAdd the proper location(s)
+  //       - adding them to the vector of all entities
+  //       - adding them to the vector inside the map, with the tag as a key
+  for (auto& entityVector : m_entitiesToAdd) {
+    m_entities.push_back(entityVector);
+    m_entityMap[entityVector->m_tag].push_back(entityVector);
+  }
+  m_entitiesToAdd.clear();
 
   //remove dead entities from the vector of all entities
   removeDeadEntities(m_entities);

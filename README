@@ -38,7 +38,7 @@ Outline Color	    OR,OG,OB	int,int,int
 Outline Thickness   OT		int
 Min/Max Vertices    VMIN,VMAX	int,int
 Small Lifespan	    L		int
-Spawn Interval	    SP		int
+Spawn Interval	    SI		int
 
 Bullet Specification:
 Bullet SR CR S FR FG FB OR OG OB OT V L
@@ -62,7 +62,7 @@ I recommend approaching this assignment in the following order:
 1. Implement the Vec2 class, which you will use for all Components
 2. Implement th basic functionality in the EntityManager class
    Implement the EntityManager's addEntity() and update() functions so
-   you can start testing the Game class quickly. DOn't worry about the update()
+   you can start testing the Game class quickly. Don't worry about the update()
    function which deletes dead entities until later when you get more game mechanics working.
 3. Implement basics of the Game class:
    a. Construct a player Entity using the spawnPlayer() function

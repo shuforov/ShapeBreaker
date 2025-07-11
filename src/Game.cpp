@@ -13,6 +13,9 @@ Game::Game(const std::string & config) {
 }
 
 void Game::init(const std::string & path) {
+  // set seeds for rundomizer function
+  srand(time(0));
+
   // Reading data in config file here
   //       using the premade PlayerConfig, EnemyConfig, BulletConfig variables to store config data
 
@@ -80,6 +83,7 @@ void Game::init(const std::string & path) {
   m_window.setFramerateLimit(frameLimit);
 
   spawnPlayer();
+  spawnEnemy(); // spawn enemy for test TODO: remove after adding dynamic spawn enemy
 }
 
 void Game::run() {
@@ -148,8 +152,42 @@ void Game::spawnEnemy() {
   // TODO: make sure the enemy is spawned properly with the m_enemyConfig variables
   //       the enemy must be spawned completely within the bounds of the window
 
-  // record when the most recent enemy was spawned
-  m_lastEnemySpawnTime = m_currentFrame;
+  auto entity = m_entities.addEntity("enemy");
+  // Give this entity a Transform so it spawns at range of window with velocity (0, 0) and angle 0
+  Vec2 enemyPosition;
+  sf::Vector2u windowSize = m_window.getSize();
+  // x and y range of spawn for enemy
+  sf::Vector2u xRangeWindowSpawn = sf::Vector2u(m_enemyConfig.SR, windowSize.x - m_enemyConfig.SR);
+  sf::Vector2u yRangeWindowSpawn = sf::Vector2u(m_enemyConfig.SR, windowSize.y - m_enemyConfig.SR);
+  int xRundNum = rundomNumber(xRangeWindowSpawn.x, xRangeWindowSpawn.y);
+  int yRundNum = rundomNumber(yRangeWindowSpawn.x, yRangeWindowSpawn.y);
+  int shapeVerticesRundNum = rundomNumber(4, 8); // rundom number of vertices for shape
+
+  entity->cTransform = std::make_shared<CTransform>(Vec2(xRundNum, yRundNum), Vec2(0.0f, 0.0f), 0.0f);
+  entity->cShape =
+    std::make_shared<CShape>(
+			     m_enemyConfig.SR,
+			     shapeVerticesRundNum,
+			     sf::Color(rundomColor()),
+			     sf::Color(
+				       m_enemyConfig.OR,
+				       m_enemyConfig.OG,
+				       m_enemyConfig.OB
+				       ),
+			     m_enemyConfig.OT
+      );
+}
+
+int Game::rundomNumber(int min, int max) {
+  return min + (rand() % (1 + max - min));
+}
+
+sf::Color Game::rundomColor() {
+  int rRundomNum = rundomNumber(0, 255);
+  int gRundomNum = rundomNumber(0, 255);
+  int bRundomNum = rundomNumber(0, 255);
+  sf::Color result = sf::Color(rRundomNum, gRundomNum, bRundomNum);
+  return result;
 }
 
 // spawns the small enemies when a big one (input entity e) explodes

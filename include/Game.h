@@ -54,4 +54,6 @@ class Game {
 
   Game(const std::string & config); // constructor, takes in game config
   void run();
+  int rundomNumber(int min, int max);
+  sf::Color rundomColor();
 };

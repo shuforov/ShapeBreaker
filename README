@@ -71,6 +71,6 @@ I recommend approaching this assignment in the following order:
    d. Construct a bullet using the spawnBullet() function
 4. Implement Player Movement in Game::sUserInput and Game::sMovement
 5. Implement the EntityManager::update() function so it deletes dead entities
-6. Implement th EntityManager::getEntities(tag) functionality
+6. Implement the EntityManager::getEntities(tag) functionality
 7. Implement collisions in sCollision and entity.destroy() if it's dead
 8. Implement the rest of the game's functionality, including config file reading

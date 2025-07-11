@@ -207,19 +207,20 @@ void Game::sEnemySpawner() {
 }
 
 void Game::sRender() {
-  // TODO: change the code below to draw ALL of the entities
-  //       sample drawing of the player Entity that we have created
   m_window.clear();
 
-  // set the poisition of the shape based on the entity's transform->pos
-  m_player->cShape->circle.setPosition(m_player->cTransform->pos.x, m_player->cTransform->pos.y);
+  // Draw ALL of the entities
+  for (auto& entityNode : m_entities.getEntities()) {
+    // set the poisition of the shape based on the entity's transform->pos
+    entityNode->cShape->circle.setPosition(entityNode->cTransform->pos.x, entityNode->cTransform->pos.y);
 
-  // set the rotation of the shape based on the entity's transform->angle
-  m_player->cTransform->angle += 1.0f;
-  m_player->cShape->circle.setRotation(m_player->cTransform->angle);
+    // set the rotation of the shape based on the entity's transform->angle
+    entityNode->cTransform->angle += 1.0f;
+    entityNode->cShape->circle.setRotation(entityNode->cTransform->angle);
 
-  // draw the entity`s sf::CircleShape
-  m_window.draw(m_player->cShape->circle);
+    // draw the entity`s sf::CircleShape
+    m_window.draw(entityNode->cShape->circle);
+  }
 
   m_window.display();
 }

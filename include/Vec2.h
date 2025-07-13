@@ -23,4 +23,5 @@ class Vec2 {
   void operator /= (const float val);
 
   float dist(const Vec2 & rhs) const;
+  Vec2 normalizeToTarget(const Vec2& target) const;
 };

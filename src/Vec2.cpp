@@ -62,3 +62,9 @@ float Vec2::dist(const Vec2& rhs) const {
   float dy = rhs.y - y;
   return std::sqrt((dx * dx) + (dy * dy));
 }
+
+Vec2 Vec2::normalizeToTarget(const Vec2& target) const {
+  Vec2 differenceVector = Vec2(target.x - x, target.y - y);
+  float length = std::sqrt((differenceVector.x * differenceVector.x) + (differenceVector.y * differenceVector.y));
+  return Vec2(differenceVector.x / length, differenceVector.y / length);
+}

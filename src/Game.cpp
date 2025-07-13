@@ -1,12 +1,15 @@
 #include "../include/Game.h"
 
+#include <SFML/Graphics/Color.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/Keyboard.hpp>
 #include <SFML/Window/Mouse.hpp>
+#include <cmath>
 #include <iostream>
 #include <memory>
 #include <fstream>
+#include <math.h>
 
 Game::Game(const std::string & config) {
   init(config);
@@ -149,8 +152,8 @@ void Game::spawnPlayer() {
 
 // spawn an enemy at a random position
 void Game::spawnEnemy() {
-  // TODO: make sure the enemy is spawned properly with the m_enemyConfig variables
-  //       the enemy must be spawned completely within the bounds of the window
+  // Spawne enemy properly with the m_enemyConfig variables
+  //       the enemy spawned completely within the bounds of the window
 
   auto entity = m_entities.addEntity("enemy");
   // Give this entity a Transform so it spawns at range of window with velocity (0, 0) and angle 0
@@ -205,6 +208,22 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 & target) {
   // TODO: implement the spawning of a bullet which travels toward target
   //       - bullet speed is given as a scalar speed
   //       - you must set the velocity by using formula in notes
+  auto entityBullet = m_entities.addEntity("bullet");
+  Vec2 bulletPosition = entity->cTransform->pos;
+  Vec2 bulletNormalize = bulletPosition.normalizeToTarget(target);
+  Vec2 bulletVelocity = Vec2(
+			     bulletNormalize.x * m_bulletConfig.S,
+			     bulletNormalize.y * m_bulletConfig.S
+			     );
+  entityBullet->cTransform = std::make_shared<CTransform>(bulletPosition, bulletVelocity, 0.0f);
+  entityBullet->cShape =
+    std::make_shared<CShape>(
+			     m_bulletConfig.SR,
+			     m_bulletConfig.V,
+			     sf::Color::White,
+			     sf::Color::Red,
+			     m_bulletConfig.OT
+			     );
 }
 
 void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity) {
@@ -212,12 +231,17 @@ void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity) {
 }
 
 void Game::sMovement() {
-  // TODO: implement all entity movement in this function
-  //       you should read the m_player->cInput component to determine if the player is moving
+  // All entity movement implementation in this function
 
-  // Sample movement speed update
-  m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
-  m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+  for (auto& entity : m_entities.getEntities("bullet")) {
+    entity->cTransform->pos.x += entity->cTransform->velocity.x;
+    entity->cTransform->pos.y += entity->cTransform->velocity.y;
+  }
+
+  for (auto& entity : m_entities.getEntities("enemy")) {
+    entity->cTransform->pos.x += entity->cTransform->velocity.x;
+    entity->cTransform->pos.y += entity->cTransform->velocity.y;
+  }
 }
 
 void Game::sLifespan() {

@@ -202,7 +202,13 @@ void Game::sMovement() {
     entity->cTransform->pos.x += entity->cTransform->velocity.x;
     entity->cTransform->pos.y += entity->cTransform->velocity.y;
   }
+  sPlayerInputStateProcess();
+  m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
+  m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+}
 
+void Game::sPlayerInputStateProcess() {
+  // Process player inputs state and change velocity based on input state.
   if (m_player->cInput->up || m_player->cInput->down ||
       m_player->cInput->left || m_player->cInput->right) {
     if (m_player->cInput->up & !m_player->cInput->down) {
@@ -236,8 +242,6 @@ void Game::sMovement() {
   } else {
     m_player->cTransform->velocity = Vec2(0, 0);
   }
-  m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
-  m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
 }
 
 void Game::sLifespan() {

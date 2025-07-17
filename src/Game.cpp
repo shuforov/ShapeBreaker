@@ -193,6 +193,7 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e) {
         e->cShape->circle.getFillColor(), e->cShape->circle.getOutlineColor(),
         e->cShape->circle.getOutlineThickness());
     entity->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
+    entity->cCollision = std::make_shared<CCollision>(e->cCollision->radius);
   }
 }
 
@@ -357,6 +358,20 @@ void Game::sCollision() {
                            ->radius; // get summ of radius of Player and Enemy.
     if (distPE < summRadius) {
       entityEnemy->destroy();
+      m_player->destroy();
+      spawnPlayer();
+    }
+  }
+  // check if small enemy collide with player
+  for (auto entitySmallEnemy : m_entities.getEntities("smallEnemy")) {
+    float distPSE = m_player->cTransform->pos.dist(
+        entitySmallEnemy->cTransform
+            ->pos); // get distance between player and small enemy nodes
+    float summRadius = m_player->cCollision->radius +
+                       entitySmallEnemy->cCollision
+                           ->radius; // get summ of radius of player and enemy
+    if (distPSE < summRadius) {
+      entitySmallEnemy->destroy();
       m_player->destroy();
       spawnPlayer();
     }

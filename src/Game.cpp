@@ -20,7 +20,6 @@ void Game::init(const std::string &path) {
   // Reading data in config file here
   //       using the premade PlayerConfig, EnemyConfig, BulletConfig variables
   //       to store config data
-
   std::ifstream fileInput(path);
   if (!fileInput.is_open()) {
     std::cerr << "Could not open config file: " << path << std::endl;
@@ -59,8 +58,6 @@ void Game::init(const std::string &path) {
   m_window.setFramerateLimit(frameLimit);
 
   spawnPlayer();
-  spawnEnemy(); // spawn enemy for test TODO: remove after adding dynamic spawn
-                // enemy
 }
 
 void Game::run() {
@@ -138,7 +135,7 @@ void Game::spawnEnemy() {
       rundomNumber(4, 8); // rundom number of vertices for shape
 
   entity->cTransform = std::make_shared<CTransform>(Vec2(xRundNum, yRundNum),
-                                                    Vec2(1.0f, 1.0f), 1.0f);
+                                                    rundomVelocity(), 1.0f);
   entity->cCollision = std::make_shared<CCollision>(m_enemyConfig.CR);
   entity->cShape = std::make_shared<CShape>(
       m_enemyConfig.SR, shapeVerticesRundNum, sf::Color(rundomColor()),
@@ -156,6 +153,12 @@ sf::Color Game::rundomColor() {
   int bRundomNum = rundomNumber(0, 255);
   sf::Color result = sf::Color(rRundomNum, gRundomNum, bRundomNum);
   return result;
+}
+
+Vec2 Game::rundomVelocity() {
+  int xValue = rand() % 2 == 0 ? -1 : 1;
+  int yValue = rand() % 2 == 0 ? -1 : 1;
+  return Vec2(xValue, yValue);
 }
 
 // spawns the small enemies when a big one (input entity e) explodes
@@ -203,8 +206,10 @@ void Game::sMovement() {
     entity->cTransform->pos.y += entity->cTransform->velocity.y;
   }
   sPlayerInputStateProcess();
-  m_player->cTransform->pos.x += m_player->cTransform->velocity.x;
-  m_player->cTransform->pos.y += m_player->cTransform->velocity.y;
+  m_player->cTransform->pos.x +=
+      m_player->cTransform->velocity.x * m_playerConfig.S;
+  m_player->cTransform->pos.y +=
+      m_player->cTransform->velocity.y * m_playerConfig.S;
 }
 
 void Game::sPlayerInputStateProcess() {
@@ -305,16 +310,26 @@ void Game::sCollision() {
                  currentPosition.x < m_enemyConfig.SR) {
         // it's collide with left age
         Vec2 velocityValue = entityEnemy->cTransform->velocity;
-        if (velocityValue.y == 1) {
-          entityEnemy->cTransform->velocity.x = 1;
-        } else if (velocityValue.y == -1) {
-          entityEnemy->cTransform->velocity.x = -1;
-        }
+        entityEnemy->cTransform->velocity.x = 1;
+
       } else if (currentPosition.y < m_window.getSize().y - m_enemyConfig.SR &&
                  currentPosition.x > m_window.getSize().x - m_enemyConfig.SR) {
         // it's collide with right age
         entityEnemy->cTransform->velocity.x = -1;
       }
+    }
+    // Check colliding with player and if it's collide player should respawn at
+    // center of screen
+    float distPE = m_player->cTransform->pos.dist(
+        entityEnemy->cTransform
+            ->pos); // get distance between Player and Enemy nodes.
+    float summRadius = m_player->cCollision->radius +
+                       entityEnemy->cCollision
+                           ->radius; // get summ of radius of Player and Enemy.
+    if (distPE < summRadius) {
+      entityEnemy->destroy();
+      m_player->destroy();
+      spawnPlayer();
     }
   }
 }
@@ -324,6 +339,12 @@ void Game::sEnemySpawner() {
   //
   //       (use m_currentFrame - m_lastEnemySpawnTime) to determine
   //       how long it has been since the last enemy spawned
+  if (m_lastEnemySpawnTime < m_enemyConfig.SI) {
+    m_lastEnemySpawnTime++;
+  } else if (m_lastEnemySpawnTime == m_enemyConfig.SI) {
+    spawnEnemy();
+    m_lastEnemySpawnTime = 0;
+  }
 }
 
 void Game::sRender() {

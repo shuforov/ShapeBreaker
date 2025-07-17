@@ -57,4 +57,5 @@ public:
   void run();
   int rundomNumber(int min, int max);
   sf::Color rundomColor();
+  Vec2 rundomVelocity();
 };

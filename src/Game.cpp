@@ -110,7 +110,7 @@ void Game::spawnPlayer() {
 
   // Add an input component to the player so that we can use inputs
   entity->cInput = std::make_shared<CInput>();
-
+  entity->cCollision = std::make_shared<CCollision>(m_playerConfig.CR);
   // Since we want this entity to be our player, set our Game's player variable
   // to be this Entity This goes slightly against th EntityManager paradigm, but
   // we use th player so much it's worth it
@@ -138,7 +138,8 @@ void Game::spawnEnemy() {
       rundomNumber(4, 8); // rundom number of vertices for shape
 
   entity->cTransform = std::make_shared<CTransform>(Vec2(xRundNum, yRundNum),
-                                                    Vec2(0.0f, 0.0f), 0.0f);
+                                                    Vec2(1.0f, 1.0f), 1.0f);
+  entity->cCollision = std::make_shared<CCollision>(m_enemyConfig.CR);
   entity->cShape = std::make_shared<CShape>(
       m_enemyConfig.SR, shapeVerticesRundNum, sf::Color(rundomColor()),
       sf::Color(m_enemyConfig.OR, m_enemyConfig.OG, m_enemyConfig.OB),
@@ -171,9 +172,6 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e) {
 
 // spawns a bullet from a given entity to a target location
 void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &target) {
-  // TODO: implement the spawning of a bullet which travels toward target
-  //       - bullet speed is given as a scalar speed
-  //       - you must set the velocity by using formula in notes
   auto entityBullet = m_entities.addEntity("bullet");
   Vec2 bulletPosition = entity->cTransform->pos;
   Vec2 bulletNormalize = bulletPosition.normalizeToTarget(target);
@@ -181,6 +179,8 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &target) {
                              bulletNormalize.y * m_bulletConfig.S);
   entityBullet->cTransform =
       std::make_shared<CTransform>(bulletPosition, bulletVelocity, 0.0f);
+  entityBullet->cCollision = std::make_shared<CCollision>(m_bulletConfig.CR);
+  entityBullet->cLifespan = std::make_shared<CLifespan>(m_bulletConfig.L);
   entityBullet->cShape = std::make_shared<CShape>(
       m_bulletConfig.SR, m_bulletConfig.V, sf::Color::White, sf::Color::Red,
       m_bulletConfig.OT);
@@ -257,8 +257,66 @@ void Game::sLifespan() {
 }
 
 void Game::sCollision() {
-  // TODO: implement all proper collisions between entities
-  //       be sure to use the collision radius, NOT th shape radius
+  // Implementation of all proper collisions between entities
+
+  for (auto entityBullet : m_entities.getEntities("bullet")) {
+    for (auto entityEnemy : m_entities.getEntities("enemy")) {
+      float distBE = entityBullet->cTransform->pos.dist(
+          entityEnemy->cTransform
+              ->pos); // get distance between Bullet and Enemy nodes.
+      float summRadius =
+          entityBullet->cCollision->radius +
+          entityEnemy->cCollision
+              ->radius; // get summ of radius of Bullet and Enemy.
+      if (distBE < summRadius) {
+        entityEnemy->destroy();
+        entityBullet->destroy();
+      }
+    }
+  }
+
+  sf::Vector2u xRangeWindowSpawn =
+      sf::Vector2u(m_enemyConfig.SR, m_window.getSize().x - m_enemyConfig.SR);
+  sf::Vector2u yRangeWindowSpawn =
+      sf::Vector2u(m_enemyConfig.SR, m_window.getSize().y - m_enemyConfig.SR);
+
+  Vec2 topLeftLimit = Vec2(m_enemyConfig.SR, m_enemyConfig.SR);
+  Vec2 bottomRightLimit = Vec2(m_window.getSize().x - m_enemyConfig.SR,
+                               m_window.getSize().y - m_enemyConfig.SR);
+
+  // check if enemy object incide of window range if not then it should bounce
+  // from age of the window
+  for (auto entityEnemy : m_entities.getEntities("enemy")) {
+    if (!(entityEnemy->cTransform->pos.x >= topLeftLimit.x &&
+          entityEnemy->cTransform->pos.x <= bottomRightLimit.x) ||
+        !(entityEnemy->cTransform->pos.y >= topLeftLimit.y &&
+          entityEnemy->cTransform->pos.y <= bottomRightLimit.y)) {
+      // check with which age colliding enemy
+      Vec2 currentPosition = entityEnemy->cTransform->pos;
+      if (currentPosition.y > m_window.getSize().y - m_enemyConfig.SR &&
+          currentPosition.x < m_window.getSize().x - m_enemyConfig.SR) {
+        // it's collide with bottom age
+        entityEnemy->cTransform->velocity.y = -1;
+      } else if (currentPosition.y < m_enemyConfig.SR &&
+                 currentPosition.x < m_window.getSize().x - m_enemyConfig.SR) {
+        // it's collide with up age
+        entityEnemy->cTransform->velocity.y = 1;
+      } else if (currentPosition.y < m_window.getSize().y - m_enemyConfig.SR &&
+                 currentPosition.x < m_enemyConfig.SR) {
+        // it's collide with left age
+        Vec2 velocityValue = entityEnemy->cTransform->velocity;
+        if (velocityValue.y == 1) {
+          entityEnemy->cTransform->velocity.x = 1;
+        } else if (velocityValue.y == -1) {
+          entityEnemy->cTransform->velocity.x = -1;
+        }
+      } else if (currentPosition.y < m_window.getSize().y - m_enemyConfig.SR &&
+                 currentPosition.x > m_window.getSize().x - m_enemyConfig.SR) {
+        // it's collide with right age
+        entityEnemy->cTransform->velocity.x = -1;
+      }
+    }
+  }
 }
 
 void Game::sEnemySpawner() {

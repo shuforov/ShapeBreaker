@@ -14,15 +14,6 @@ void EntityManager::update() {
   }
   m_entitiesToAdd.clear();
 
-  // update lifetime counter for bullets
-  for (auto &entity : getEntities("bullet")) {
-    if (entity->cLifespan->remaining > 0) {
-      entity->cLifespan->remaining--;
-    } else if (entity->cLifespan->remaining == 0) {
-      entity->destroy();
-    }
-  }
-
   // remove dead entities from the vector of all entities
   removeDeadEntities(m_entities);
 

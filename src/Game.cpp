@@ -72,6 +72,7 @@ void Game::run() {
     sCollision();
     sUserInput();
     sRender();
+    sLifespan();
 
     // increment the current frame
     // may need to be moved when pause implemented
@@ -132,7 +133,7 @@ void Game::spawnEnemy() {
   int xRundNum = rundomNumber(xRangeWindowSpawn.x, xRangeWindowSpawn.y);
   int yRundNum = rundomNumber(yRangeWindowSpawn.x, yRangeWindowSpawn.y);
   int shapeVerticesRundNum =
-      rundomNumber(4, 8); // rundom number of vertices for shape
+      rundomNumber(3, 8); // rundom number of vertices for shape
 
   entity->cTransform = std::make_shared<CTransform>(Vec2(xRundNum, yRundNum),
                                                     rundomVelocity(), 1.0f);
@@ -171,6 +172,28 @@ void Game::spawnSmallEnemies(std::shared_ptr<Entity> e) {
   // enemy
   // - set each small enemy to the same color as the original, half the size
   // - small enemies are worth double points of the original enemy
+  int movementSpeed = 5; // movement speed of spawned small enemy
+  int shapeVertices = e->cShape->circle.getPointCount();
+  int shapeSize = e->cShape->circle.getRadius() / 2;
+  Vec2 positionEnemey = e->cTransform->pos;
+  int angleSide = 360 / shapeVertices;
+  // creating small enemies process loop
+  for (int i = 1; i <= shapeVertices; ++i) {
+    int angleStepRadius = angleSide * i;
+    float angleRdaius = angleStepRadius * (M_PI / 180);
+    Vec2 targetPoint = Vec2(cos(angleRdaius), sin(angleRdaius));
+    Vec2 velocityValue =
+        Vec2(targetPoint.x * movementSpeed, targetPoint.y * movementSpeed);
+    // creating small enemy
+    auto entity = m_entities.addEntity("smallEnemy");
+    entity->cTransform =
+        std::make_shared<CTransform>(positionEnemey, velocityValue, 0.0f);
+    entity->cShape = std::make_shared<CShape>(
+        m_enemyConfig.SR / 2.0f, shapeVertices,
+        e->cShape->circle.getFillColor(), e->cShape->circle.getOutlineColor(),
+        e->cShape->circle.getOutlineThickness());
+    entity->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
+  }
 }
 
 // spawns a bullet from a given entity to a target location
@@ -205,6 +228,12 @@ void Game::sMovement() {
     entity->cTransform->pos.x += entity->cTransform->velocity.x;
     entity->cTransform->pos.y += entity->cTransform->velocity.y;
   }
+
+  for (auto &entity : m_entities.getEntities("smallEnemy")) {
+    entity->cTransform->pos.x += entity->cTransform->velocity.x;
+    entity->cTransform->pos.y += entity->cTransform->velocity.y;
+  }
+
   sPlayerInputStateProcess();
   m_player->cTransform->pos.x +=
       m_player->cTransform->velocity.x * m_playerConfig.S;
@@ -250,15 +279,14 @@ void Game::sPlayerInputStateProcess() {
 }
 
 void Game::sLifespan() {
-  // TODO: implement all lifespan functionality
-  //
-  // for all entities
-  //     if entity has no lifespan component, skip it
-  //     if entity has > 0 remaining lifespan, subtract 1
-  //     if it has lifespan and is alive
-  //         scale its alpha channel properly
-  //     if it has lifespan and its time is up
-  //         destroy the entity
+  // update lifetime counter for bullets
+  for (auto &entity : m_entities.getEntities("bullet")) {
+    entity->updateLifeSpanAndColor();
+  }
+  // update lifetime counter for small enemy
+  for (auto &entity : m_entities.getEntities("smallEnemy")) {
+    entity->updateLifeSpanAndColor();
+  }
 }
 
 void Game::sCollision() {
@@ -274,6 +302,7 @@ void Game::sCollision() {
           entityEnemy->cCollision
               ->radius; // get summ of radius of Bullet and Enemy.
       if (distBE < summRadius) {
+        spawnSmallEnemies(entityEnemy);
         entityEnemy->destroy();
         entityBullet->destroy();
       }
@@ -335,10 +364,7 @@ void Game::sCollision() {
 }
 
 void Game::sEnemySpawner() {
-  // TODO: code which implenets enemy spawning should go here
-  //
-  //       (use m_currentFrame - m_lastEnemySpawnTime) to determine
-  //       how long it has been since the last enemy spawned
+  // logic of spawning enemy every m_enemyConfig.SI time
   if (m_lastEnemySpawnTime < m_enemyConfig.SI) {
     m_lastEnemySpawnTime++;
   } else if (m_lastEnemySpawnTime == m_enemyConfig.SI) {
@@ -382,19 +408,15 @@ void Game::sUserInput() {
     if (event.type == sf::Event::KeyPressed) {
       switch (event.key.code) {
       case sf::Keyboard::W:
-        std::cout << "W Key Pressed\n";
         m_player->cInput->up = true;
         break;
       case sf::Keyboard::A:
-        std::cout << "A Key Pressed\n";
         m_player->cInput->left = true;
         break;
       case sf::Keyboard::S:
-        std::cout << "S Key Pressed\n";
         m_player->cInput->down = true;
         break;
       case sf::Keyboard::D:
-        std::cout << "D Key Pressed\n";
         m_player->cInput->right = true;
         break;
       default:
@@ -406,19 +428,15 @@ void Game::sUserInput() {
     if (event.type == sf::Event::KeyReleased) {
       switch (event.key.code) {
       case sf::Keyboard::W:
-        std::cout << "W Key Released" << std::endl;
         m_player->cInput->up = false;
         break;
       case sf::Keyboard::A:
-        std::cout << "A Key Released\n";
         m_player->cInput->left = false;
         break;
       case sf::Keyboard::S:
-        std::cout << "S Key Released\n";
         m_player->cInput->down = false;
         break;
       case sf::Keyboard::D:
-        std::cout << "D Key Released\n";
         m_player->cInput->right = false;
         break;
       default:
@@ -428,8 +446,6 @@ void Game::sUserInput() {
 
     if (event.type == sf::Event::MouseButtonPressed) {
       if (event.mouseButton.button == sf::Mouse::Left) {
-        std::cout << "Left Mouse Button Clicked at (" << event.mouseButton.x
-                  << "," << event.mouseButton.y << ")\n";
         spawnBullet(m_player, Vec2(event.mouseButton.x, event.mouseButton.y));
       }
 

@@ -308,6 +308,20 @@ void Game::sCollision() {
         entityBullet->destroy();
       }
     }
+
+    for (auto entitySmallEnemy : m_entities.getEntities("smallEnemy")) {
+      float distBSE = entityBullet->cTransform->pos.dist(
+          entitySmallEnemy->cTransform
+              ->pos); // get distance between Bullet and Small Enemy nodes.
+      float summRadius =
+          entityBullet->cCollision->radius +
+          entitySmallEnemy->cCollision
+              ->radius; // get summ of radius of Bullet and SmallSmall Enemy.
+      if (distBSE < summRadius) {
+        entitySmallEnemy->destroy();
+        entityBullet->destroy();
+      }
+    }
   }
 
   sf::Vector2u xRangeWindowSpawn =

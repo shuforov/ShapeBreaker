@@ -80,13 +80,14 @@ void Game::run() {
   while (m_running) {
     m_entities.update();
 
-    sEnemySpawner();
-    sMovement();
-    sCollision();
     sUserInput();
     sRender();
-    sLifespan();
-
+    if (!m_paused) {
+      sMovement();
+      sLifespan();
+      sEnemySpawner();
+      sCollision();
+    }
     // increment the current frame
     // may need to be moved when pause implemented
     m_currentFrame++;
@@ -249,6 +250,9 @@ void Game::sMovement() {
 
 void Game::sPlayerInputStateProcess() {
   // Process player inputs state and change velocity based on input state.
+  if (m_paused) {
+    return;
+  }
   if (m_player->cInput->up || m_player->cInput->down ||
       m_player->cInput->left || m_player->cInput->right) {
     if (m_player->cInput->up & !m_player->cInput->down) {
@@ -485,13 +489,29 @@ void Game::sUserInput() {
 
     if (event.type == sf::Event::MouseButtonPressed) {
       if (event.mouseButton.button == sf::Mouse::Left) {
+        if (m_paused) {
+          return;
+        }
         spawnBullet(m_player, Vec2(event.mouseButton.x, event.mouseButton.y));
       }
 
       if (event.mouseButton.button == sf::Mouse::Right) {
+        if (m_paused) {
+          return;
+        }
         std::cout << "Right Mouse Button Clicked at (" << event.mouseButton.x
                   << "," << event.mouseButton.y << ")\n";
         // call spawnSpecialWeapon here
+      }
+    }
+
+    if (event.type == sf::Event::KeyPressed) {
+      switch (event.key.code) {
+      case sf::Keyboard::P:
+        m_paused = !m_paused;
+        break;
+      default:
+        break;
       }
     }
   }

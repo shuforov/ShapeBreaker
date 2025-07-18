@@ -10,6 +10,7 @@
 #include <iostream>
 #include <math.h>
 #include <memory>
+#include <string>
 
 Game::Game(const std::string &config) { init(config); }
 
@@ -50,6 +51,18 @@ void Game::init(const std::string &path) {
           m_bulletConfig.FR >> m_bulletConfig.FG >> m_bulletConfig.FB >>
           m_bulletConfig.OR >> m_bulletConfig.OG >> m_bulletConfig.OB >>
           m_bulletConfig.OT >> m_bulletConfig.V >> m_bulletConfig.L;
+    } else if (configName == "Font") {
+      std::string fontPath;
+      int fontSize;
+      sf::Color fontColor;
+      fileInput >> fontPath >> fontSize >> fontColor.r >> fontColor.g >>
+          fontColor.b;
+      if (!m_font.loadFromFile(fontPath)) {
+        throw std::invalid_argument("Font not loaded");
+      }
+      m_text.setFont(m_font);
+      m_text.setCharacterSize(fontSize);
+      m_text.setFillColor(fontColor);
     }
   }
 
@@ -164,14 +177,6 @@ Vec2 Game::rundomVelocity() {
 
 // spawns the small enemies when a big one (input entity e) explodes
 void Game::spawnSmallEnemies(std::shared_ptr<Entity> e) {
-  // TODO: spawn small enemies at the location of the input enemy e
-
-  // when we create the smaller enemy, we have to read the values of the
-  // original enemy
-  // - spawn a number of smal enemies equal to the vertices of the original
-  // enemy
-  // - set each small enemy to the same color as the original, half the size
-  // - small enemies are worth double points of the original enemy
   int movementSpeed = 5; // movement speed of spawned small enemy
   int shapeVertices = e->cShape->circle.getPointCount();
   int shapeSize = e->cShape->circle.getRadius() / 2;
@@ -306,6 +311,7 @@ void Game::sCollision() {
         spawnSmallEnemies(entityEnemy);
         entityEnemy->destroy();
         entityBullet->destroy();
+        m_score += enemyScorePoints;
       }
     }
 
@@ -316,10 +322,11 @@ void Game::sCollision() {
       float summRadius =
           entityBullet->cCollision->radius +
           entitySmallEnemy->cCollision
-              ->radius; // get summ of radius of Bullet and SmallSmall Enemy.
+              ->radius; // get summ of radius of Bullet and Small Enemy.
       if (distBSE < summRadius) {
         entitySmallEnemy->destroy();
         entityBullet->destroy();
+        m_score += smallEnemyScorePoints;
       }
     }
   }
@@ -418,6 +425,9 @@ void Game::sRender() {
     // draw the entity`s sf::CircleShape
     m_window.draw(entityNode->cShape->circle);
   }
+  // draw text score
+  m_text.setString("Score points: " + std::to_string(m_score));
+  m_window.draw(m_text);
 
   m_window.display();
 }

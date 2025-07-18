@@ -33,6 +33,8 @@ class Game {
   int m_lastEnemySpawnTime = 0;
   bool m_paused = false; // whether we update game logic
   bool m_running = true;
+  const int enemyScorePoints = 20;
+  const int smallEnemyScorePoints = 40;
 
   std::shared_ptr<Entity> m_player;
   void init(const std::string

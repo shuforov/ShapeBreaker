@@ -4,10 +4,37 @@ To build project
 ./build$ cmake ..
 ./build$ make
 #
-To run project
+To run project(or in bin folder executable file of game)
 #
 ./build$ make run
 #
+
+Game Description
+Controls:
+
+W, A, S, D — Move the player
+
+Left Mouse Button — Shoot
+
+Right Mouse Button — Super shoot
+
+P — Pause / Unpause the game
+
+While paused, all inputs (except P) are disabled and enemy movement stops.
+
+Gameplay:
+
+Enemies spawn randomly and bounce off the edges of the screen.
+
+When an enemy is killed, it splits into smaller enemies.
+
+There are two types of score points:
+
+Regular enemy: +20 points
+
+Small enemy: +40 points
+
+If the player is hit by any enemy (regular or small), they respawn at the center of the screen.
 
 Window W H FL FS
 - This line declares that the SFML Window must be constructed with width W and height H, each of which will be integers. FL is the frame limit that the window should be set to, and FS will be an integer which specifies whether to display the application in full-screen mode (1) or not (0).

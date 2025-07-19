@@ -74,9 +74,6 @@ void Game::init(const std::string &path) {
 }
 
 void Game::run() {
-  // TODO: add pause functionality in here
-  //       some systems should function while paused (rendering)
-  //       some systems shouldn't (movement / input)
   while (m_running) {
     m_entities.update();
 
@@ -94,9 +91,7 @@ void Game::run() {
   }
 }
 
-void Game::setPaused(bool paused) {
-  // TODO
-}
+void Game::setPaused(bool paused) { m_paused = paused; }
 
 // respawn the player in the middle of the screen
 void Game::spawnPlayer() {
@@ -219,8 +214,31 @@ void Game::spawnBullet(std::shared_ptr<Entity> entity, const Vec2 &target) {
       m_bulletConfig.OT);
 }
 
-void Game::spawnSpecialWeapon(std::shared_ptr<Entity> entity) {
-  // TODO: implement your own special weapon
+void Game::spawnSpecialWeapon(std::shared_ptr<Entity> e) {
+  //  processing of special weapon
+  int movementSpeed = m_bulletConfig.S; // movement speed of bullet
+  int shapeVertices = e->cShape->circle.getPointCount();
+  int shapeSize = e->cShape->circle.getRadius() / 2;
+  Vec2 positionPlayer = e->cTransform->pos;
+  int angleSide = 360 / shapeVertices;
+  // creating bullets process loop
+  for (int i = 1; i <= shapeVertices; ++i) {
+    int angleStepRadius = angleSide * i;
+    float angleRdaius = angleStepRadius * (M_PI / 180);
+    Vec2 targetPoint = Vec2(cos(angleRdaius), sin(angleRdaius));
+    Vec2 velocityValue =
+        Vec2(targetPoint.x * movementSpeed, targetPoint.y * movementSpeed);
+    // creating bullet
+    auto entity = m_entities.addEntity("bullet");
+    entity->cTransform =
+        std::make_shared<CTransform>(positionPlayer, velocityValue, 0.0f);
+    entity->cShape = std::make_shared<CShape>(
+        m_enemyConfig.SR / 2.0f, shapeVertices, sf::Color::White,
+        e->cShape->circle.getOutlineColor(),
+        e->cShape->circle.getOutlineThickness());
+    entity->cLifespan = std::make_shared<CLifespan>(m_enemyConfig.L);
+    entity->cCollision = std::make_shared<CCollision>(e->cCollision->radius);
+  }
 }
 
 void Game::sMovement() {
@@ -242,10 +260,6 @@ void Game::sMovement() {
   }
 
   sPlayerInputStateProcess();
-  m_player->cTransform->pos.x +=
-      m_player->cTransform->velocity.x * m_playerConfig.S;
-  m_player->cTransform->pos.y +=
-      m_player->cTransform->velocity.y * m_playerConfig.S;
 }
 
 void Game::sPlayerInputStateProcess() {
@@ -253,23 +267,65 @@ void Game::sPlayerInputStateProcess() {
   if (m_paused) {
     return;
   }
+
+  sf::Vector2u xRangeWindowSpawn =
+      sf::Vector2u(m_playerConfig.SR, m_window.getSize().x - m_playerConfig.SR);
+  sf::Vector2u yRangeWindowSpawn =
+      sf::Vector2u(m_playerConfig.SR, m_window.getSize().y - m_playerConfig.SR);
+
+  Vec2 topLeftLimit = Vec2(m_playerConfig.SR, m_playerConfig.SR);
+  Vec2 bottomRightLimit = Vec2(m_window.getSize().x - m_playerConfig.SR,
+                               m_window.getSize().y - m_playerConfig.SR);
+
+  Vec2 currentPosition = m_player->cTransform->pos;
+
   if (m_player->cInput->up || m_player->cInput->down ||
       m_player->cInput->left || m_player->cInput->right) {
     if (m_player->cInput->up & !m_player->cInput->down) {
-      m_player->cTransform->velocity.y = -1;
+      if (currentPosition.y < m_playerConfig.SR) {
+        // it's collide with up edge it can't move up
+        m_player->cInput->up = false;
+      } else {
+        m_player->cTransform->velocity.y = -1;
+      }
       if (m_player->cInput->right) {
-        m_player->cTransform->velocity.x = 1;
+        if (currentPosition.x > m_window.getSize().x - m_playerConfig.SR) {
+          // it's collide with right edge it can't move right
+          m_player->cInput->right = false;
+        } else {
+          m_player->cTransform->velocity.x = 1;
+        }
       } else if (m_player->cInput->left) {
-        m_player->cTransform->velocity.x = -1;
+        if (currentPosition.x < m_playerConfig.SR) {
+          // it's collide with left edge it can't move left
+          m_player->cInput->left = false;
+        } else {
+          m_player->cTransform->velocity.x = -1;
+        }
       } else {
         m_player->cTransform->velocity.x = 0;
       }
     } else if (m_player->cInput->down & !m_player->cInput->up) {
-      m_player->cTransform->velocity.y = 1;
+      if (currentPosition.y > m_window.getSize().y - m_playerConfig.SR) {
+        // it's collide with bottom edge it can't move bottom
+        m_player->cInput->down = false;
+      } else {
+        m_player->cTransform->velocity.y = 1;
+      }
       if (m_player->cInput->right) {
-        m_player->cTransform->velocity.x = 1;
+        if (currentPosition.x > m_window.getSize().x - m_playerConfig.SR) {
+          // it's collide with right edge it can't move right
+          m_player->cInput->right = false;
+        } else {
+          m_player->cTransform->velocity.x = 1;
+        }
       } else if (m_player->cInput->left) {
-        m_player->cTransform->velocity.x = -1;
+        if (currentPosition.x < m_playerConfig.SR) {
+          // it's collide with left edge it can't move left
+          m_player->cInput->left = false;
+        } else {
+          m_player->cTransform->velocity.x = -1;
+        }
       } else {
         m_player->cTransform->velocity.x = 0;
       }
@@ -277,15 +333,29 @@ void Game::sPlayerInputStateProcess() {
       m_player->cTransform->velocity.y = 0;
     }
     if (m_player->cInput->left & !m_player->cInput->right) {
-      m_player->cTransform->velocity.x = -1;
+      if (currentPosition.x < m_playerConfig.SR) {
+        // it's collide with left edge it can't move left
+        m_player->cInput->left = false;
+      } else {
+        m_player->cTransform->velocity.x = -1;
+      }
     } else if (m_player->cInput->right & !m_player->cInput->left) {
-      m_player->cTransform->velocity.x = 1;
+      if (currentPosition.x > m_window.getSize().x - m_playerConfig.SR) {
+        // it's collide with right edge it can't move right
+        m_player->cInput->right = false;
+      } else {
+        m_player->cTransform->velocity.x = 1;
+      }
     } else {
       m_player->cTransform->velocity.x = 0;
     }
   } else {
     m_player->cTransform->velocity = Vec2(0, 0);
   }
+  m_player->cTransform->pos.x +=
+      m_player->cTransform->velocity.x * m_playerConfig.S;
+  m_player->cTransform->pos.y +=
+      m_player->cTransform->velocity.y * m_playerConfig.S;
 }
 
 void Game::sLifespan() {
@@ -345,36 +415,36 @@ void Game::sCollision() {
                                m_window.getSize().y - m_enemyConfig.SR);
 
   // check if enemy object incide of window range if not then it should bounce
-  // from age of the window
+  // from edge of the window
   for (auto entityEnemy : m_entities.getEntities("enemy")) {
     if (!(entityEnemy->cTransform->pos.x >= topLeftLimit.x &&
           entityEnemy->cTransform->pos.x <= bottomRightLimit.x) ||
         !(entityEnemy->cTransform->pos.y >= topLeftLimit.y &&
           entityEnemy->cTransform->pos.y <= bottomRightLimit.y)) {
-      // check with which age colliding enemy
+      // check with which edge colliding enemy
       Vec2 currentPosition = entityEnemy->cTransform->pos;
       if (currentPosition.y > m_window.getSize().y - m_enemyConfig.SR &&
           currentPosition.x < m_window.getSize().x - m_enemyConfig.SR) {
-        // it's collide with bottom age
+        // it's collide with bottom edge
         entityEnemy->cTransform->velocity.y = -1;
       } else if (currentPosition.y < m_enemyConfig.SR &&
                  currentPosition.x < m_window.getSize().x - m_enemyConfig.SR) {
-        // it's collide with up age
+        // it's collide with up edge
         entityEnemy->cTransform->velocity.y = 1;
       } else if (currentPosition.y < m_window.getSize().y - m_enemyConfig.SR &&
                  currentPosition.x < m_enemyConfig.SR) {
-        // it's collide with left age
+        // it's collide with left edge
         Vec2 velocityValue = entityEnemy->cTransform->velocity;
         entityEnemy->cTransform->velocity.x = 1;
 
       } else if (currentPosition.y < m_window.getSize().y - m_enemyConfig.SR &&
                  currentPosition.x > m_window.getSize().x - m_enemyConfig.SR) {
-        // it's collide with right age
+        // it's collide with right edge
         entityEnemy->cTransform->velocity.x = -1;
       }
     }
-    // Check colliding with player and if it's collide player should respawn at
-    // center of screen
+    // Check if enemy colliding with player and if it's collide player should
+    // respawn at center of screen
     float distPE = m_player->cTransform->pos.dist(
         entityEnemy->cTransform
             ->pos); // get distance between Player and Enemy nodes.
@@ -499,16 +569,14 @@ void Game::sUserInput() {
         if (m_paused) {
           return;
         }
-        std::cout << "Right Mouse Button Clicked at (" << event.mouseButton.x
-                  << "," << event.mouseButton.y << ")\n";
-        // call spawnSpecialWeapon here
+        spawnSpecialWeapon(m_player);
       }
     }
 
     if (event.type == sf::Event::KeyPressed) {
       switch (event.key.code) {
       case sf::Keyboard::P:
-        m_paused = !m_paused;
+        setPaused(!m_paused);
         break;
       default:
         break;
